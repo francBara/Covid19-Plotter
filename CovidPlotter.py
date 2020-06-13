@@ -85,6 +85,9 @@ def Options(inputLine):
         elif (inputLine[i] == '-r'):
             commands[1] = "R"
 
+        elif (inputLine[i] == '-a'):
+            commands[1] = "A"
+
         elif (option):
             commands[0] += " "
             commands[0] += inputLine[i]
@@ -103,6 +106,7 @@ elif (commands[2] == 'T'):
     print("Covid-19 plotter, shows cases per region in Italy, interfacing with the civil protection database")
     print("COMMANDS:")
     print(argv[0],"<REGION>")
+    print("-a | Shows new cases per day")
     print("-d | Shows deaths plot")
     print("-c | Shows healed plot")
     print("-n | Disables plot (just prints infos to screen)")
@@ -138,11 +142,17 @@ elif (commands[0] != ''):
         elif (commands[1] == 'P'):
             cases, dates = CollectData(commands[0], data, "totale_positivi")
             label = "Cases"
-            print("Current cases:",cases[len(cases)-1])
+            print("Total cases:",cases[len(cases)-1])
+        elif (commands[1] == 'A'):
+            cases, dates = CollectData(commands[0], data, "nuovi_positivi")
+            label = "New Cases"
+            print("Total cases:",cases[len(cases)-1])
         elif (commands[1] == 'H'):
             cases, dates = CollectData(commands[0], data, "dimessi_guariti")
             label = "Healed"
             print("Healed:",cases[len(cases)-1])
+
+        print("Last update:",DateFormat(dates)[-1])
     
         if (commands[2] != 'N'):
             dates = DateFormat(dates)
