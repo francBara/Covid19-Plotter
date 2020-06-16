@@ -28,6 +28,27 @@ def CollectData(region, data, dataType):
 
     return cases, dates
 
+#Represents the increment of the curve for an ever increasing set of data
+def DataIncrement(data):
+    new_data = []
+    tmp = 0
+
+    for d in data:
+        new_data.append(d - tmp)
+        tmp = d
+
+    return new_data
+   
+def divide_data_set(data1, data2):
+    new_data = []
+
+    for i in range(len(data1)):
+        if (data2[i] == 0):
+            data2[i] = 1
+        new_data.append(data1[i] / data2[i])
+
+    return new_data
+
 def CheckRegions(data):
     regions = []
     i = 0
@@ -88,6 +109,12 @@ def Options(inputLine):
         elif (inputLine[i] == '-a'):
             commands[1] = "A"
 
+        elif (inputLine[i] == '-t'):
+            commands[1] = "T"
+
+        elif (inputLine[i] == '-e'):
+            commands[1] = "E"
+
         elif (option):
             commands[0] += " "
             commands[0] += inputLine[i]
@@ -109,6 +136,8 @@ elif (commands[2] == 'T'):
     print("-a | Shows new cases per day")
     print("-d | Shows deaths plot")
     print("-c | Shows healed plot")
+    print("-t | Shows tampons per day")
+    print("-e | Shows a curve representing the cases compared to tampons")
     print("-n | Disables plot (just prints infos to screen)")
     print("-r | Shows the list of available regions")
     print("-h | Shows this screen")
@@ -147,10 +176,22 @@ elif (commands[0] != ''):
             cases, dates = CollectData(commands[0], data, "nuovi_positivi")
             label = "New Cases"
             print("Total cases:",cases[len(cases)-1])
+        elif (commands[1] == 'T'):
+            cases, dates = CollectData(commands[0], data, "tamponi")
+            total = cases[len(cases)-1]
+            cases = DataIncrement(cases)
+            label = "Tampons"
+            print("Total tampons:",total)
         elif (commands[1] == 'H'):
             cases, dates = CollectData(commands[0], data, "dimessi_guariti")
             label = "Healed"
             print("Healed:",cases[len(cases)-1])
+        elif (commands[1] == 'E'):
+            cases, dates = CollectData(commands[0], data, "nuovi_positivi")
+            tampons, dates = CollectData(commands[0], data, "tamponi")
+            tampons = DataIncrement(tampons)
+            cases = divide_data_set(cases, tampons)
+            label = "True curve"
 
         print("Last update:",DateFormat(dates)[-1])
     
