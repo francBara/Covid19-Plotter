@@ -3,30 +3,40 @@ from sys import argv
 import matplotlib.pyplot as plt
 import numpy as np
 
-def CollectData(region, data, dataType):
-    cases = []
+def CollectNationData(data_file, dataType):
+    data = []
+    dates = []
+
+    for i in range(len(data_file)):
+        data.append(data_file[i][dataType])
+        dates.append(data_file[i]["data"])
+
+    return data, dates
+
+def CollectRegionData(region, data_file, dataType):
+    data = []
     dates = []
     i = 0
 
     region = region.lower()
 
-    for j in data:
+    for j in data_file:
         j["denominazione_regione"] = j["denominazione_regione"].lower()
 
-    if (not region in CheckRegions(data)):
+    if (not region in CheckRegions(data_file)):
         print("Region not recognized")
         print("Use -r command to see the list of available regions")
         exit()
 
-    while (i < len(data) and data[i]["denominazione_regione"] != region):
+    while (i < len(data_file) and data_file[i]["denominazione_regione"] != region):
         i += 1
 
-    while (i < len(data)):
-        cases.append(data[i][dataType])
-        dates.append(data[i]["data"])
+    while (i < len(data_file)):
+        data.append(data_file[i][dataType])
+        dates.append(data_file[i]["data"])
         i += 21
 
-    return cases, dates
+    return data, dates
 
 #Represents the increment of the curve for an ever increasing set of data
 def DataIncrement(data):
@@ -86,6 +96,13 @@ def Capitalize(string):
         nu_str += string[i]
     return nu_str
 
+def PlotData(data, dates, label):
+    plt.plot(dates, data)
+    plt.xticks(np.arange(0, len(dates), 8))
+    plt.ylabel(label)
+    np.arange(0, len(dates), 10)
+    plt.show()
+
 
 def Options(inputLine):
     commands = ["", "P", "F"]
@@ -127,12 +144,26 @@ def Options(inputLine):
 commands = Options(argv)
 
 if (len(argv) == 1):
-    print("COVID-19 plotter, type '-h' for help")
+    try:
+        data = json.load(open("italy.json"))
+    except:
+        print("Json database not found, execute 'update_data.sh' to update file")
+    else:
+        cases, dates = CollectNationData(data, "totale_positivi")
+        
+        print("Current cases in Italy:",cases[-1])
+        print("Last update:",DateFormat(dates)[-1])
+
+        dates = DateFormat(dates)
+
+        PlotData(cases, dates, "Cases")
+        
 
 elif (commands[2] == 'T'):
     print("Covid-19 plotter, shows cases per region in Italy, interfacing with the civil protection database")
     print("COMMANDS:")
-    print(argv[0],"<REGION>")
+    print(argv[0],"| Shows cases in all Italy")
+    print(argv[0],"<REGION> | Shows cases in the chosen region")
     print("-a | Shows new cases per day")
     print("-d | Shows deaths plot")
     print("-c | Shows healed plot")
@@ -144,9 +175,9 @@ elif (commands[2] == 'T'):
 
 elif (commands[1] == 'R'):
     try:
-        data = json.load(open("dpc-covid19-ita-regioni.json"))
+        data = json.load(open("regions.json"))
     except:
-        print("Json database not found")
+        print("Json database not found, execute 'update_data.sh' to update file")
     else:
         regions = CheckRegions(data)
         print("AVAILABLE REGIONS:")
@@ -159,36 +190,36 @@ elif (commands[0] != ''):
     label = ""
 
     try:
-        data = json.load(open("dpc-covid19-ita-regioni.json"))
+        data = json.load(open("regions.json"))
     except:
         print("Json database not found")
 
     else: 
         if (commands[1] == 'D'):
-            cases, dates = CollectData(commands[0], data, "deceduti")
+            cases, dates = CollectRegionData(commands[0], data, "deceduti")
             label = "Deaths"
             print("Total deaths:",cases[len(cases)-1])
         elif (commands[1] == 'P'):
-            cases, dates = CollectData(commands[0], data, "totale_positivi")
+            cases, dates = CollectRegionData(commands[0], data, "totale_positivi")
             label = "Cases"
             print("Total cases:",cases[len(cases)-1])
         elif (commands[1] == 'A'):
-            cases, dates = CollectData(commands[0], data, "nuovi_positivi")
+            cases, dates = CollectRegionData(commands[0], data, "nuovi_positivi")
             label = "New Cases"
             print("Total cases:",cases[len(cases)-1])
         elif (commands[1] == 'T'):
-            cases, dates = CollectData(commands[0], data, "tamponi")
+            cases, dates = CollectRegionData(commands[0], data, "tamponi")
             total = cases[len(cases)-1]
             cases = DataIncrement(cases)
             label = "Tampons"
             print("Total tampons:",total)
         elif (commands[1] == 'H'):
-            cases, dates = CollectData(commands[0], data, "dimessi_guariti")
+            cases, dates = CollectRegionData(commands[0], data, "dimessi_guariti")
             label = "Healed"
             print("Healed:",cases[len(cases)-1])
         elif (commands[1] == 'E'):
-            cases, dates = CollectData(commands[0], data, "nuovi_positivi")
-            tampons, dates = CollectData(commands[0], data, "tamponi")
+            cases, dates = CollectRegionData(commands[0], data, "nuovi_positivi")
+            tampons, dates = CollectRegionData(commands[0], data, "tamponi")
             tampons = DataIncrement(tampons)
             cases = divide_data_set(cases, tampons)
             label = "True curve"
@@ -198,11 +229,6 @@ elif (commands[0] != ''):
         if (commands[2] != 'N'):
             dates = DateFormat(dates)
             
-            plt.plot(dates, cases)
-            plt.xticks(np.arange(0, len(dates), 8))
-            plt.ylabel(label)
-            np.arange(0, len(dates), 10)
-            plt.show()
-
+            PlotData(cases, dates, label)
 else:
     print("Unknown error")
